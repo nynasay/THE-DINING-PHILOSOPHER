@@ -54,7 +54,7 @@ public class DiningRoomPhilosopher {
             mutex.lock();
             try{
                 setState(philosopherIndex, "hungry");
-                System.out.println("Philosopher " + (philosopherIndex +1) +" is hungry");
+                System.out.println("Philosopher " + (philosopherIndex +1) +" is " + currentState[philosopherIndex]);
 
                 //The philospher has to wait until the forks become available
                 while (!left.getAvailability() || !right.getAvailability()){
@@ -67,9 +67,12 @@ public class DiningRoomPhilosopher {
                 right.setAvailable(false);
 
                 //CHANGE THE PHILOSOPHER'S STATE TO EATING AND SHOW WHAT FORKS ARE BEING USED
-                //setState(philosopherIndex, "eating");
-                int leftFork = (((philosopherIndex+1) + 4) % 5);
-                int rightFork = philosopherIndex + 1;
+                setState(philosopherIndex, "eating");
+                int rightFork = (((philosopherIndex+1) + 4) % 5);
+                int leftFork = philosopherIndex + 1;
+                if (rightFork == 0){
+                    rightFork = 5;
+                }
                 System.out.println("Philosopher " + (philosopherIndex+1) + " takes fork " + (leftFork) + " and " + rightFork);
                 System.out.println("Philosopher " + (philosopherIndex+1) + " is " + currentState[philosopherIndex]);
 
@@ -91,16 +94,19 @@ public class DiningRoomPhilosopher {
             conditions[(philosopherIndex+4) % 5].signal();
 
             //DISPLAY THE FORKS THE PHILOSOPHER PUT DOWN AND THE STATE THEY'RE IN
-            int leftFork = (((philosopherIndex+1) + 4) % 5);
-            int rightFork = philosopherIndex + 1;
-            System.out.println("Philosopher " + (philosopherIndex+1) + " puts fork " + (leftFork) + " and " + rightFork + " down.");
+            int rightFork = (((philosopherIndex+1) + 4) % 5);
+            int leftFork = philosopherIndex + 1;
+            if (rightFork == 0){
+                rightFork = 5;
+            }
+            System.out.println("Philosopher " + (philosopherIndex+1) + " puts fork " + leftFork + " and " + rightFork + " down.");
             System.out.println("Philosopher " + (philosopherIndex+1) + " is " + currentState[philosopherIndex]);
             mutex.unlock();
         }
 
     }
 
-    //
+    //CLASS THAT HOLDS THE PHILOSOPHER OBJECT
     static class Philosopher implements Runnable{
         State state;
         Fork left, right;
@@ -119,7 +125,7 @@ public class DiningRoomPhilosopher {
             int sleepTime = (int)(Math.random()*2000);
             try{
                 Thread.sleep(sleepTime);
-                System.out.println("Philosopher " + (philosopherIndex +1) +" is thinking");
+                //System.out.println("Philosopher " + (philosopherIndex +1) +" is thinking");
             }catch (InterruptedException e){
                 e.printStackTrace();
             }
@@ -130,7 +136,7 @@ public class DiningRoomPhilosopher {
             int sleepTime = (int)(Math.random()*2000);
             try{
                 Thread.sleep(sleepTime);
-                System.out.println("Philosopher " + (philosopherIndex +1) +" is eating");
+                //System.out.println("Philosopher " + (philosopherIndex +1) +" is eating");
             }catch (InterruptedException e){
                 e.printStackTrace();
             }
@@ -138,6 +144,7 @@ public class DiningRoomPhilosopher {
 
         //INITIALIZES THE PHILOSOPHER TO START THINKING AND EATING
         public void run(){
+            //MIGHT WANT TO LOOP THROUGH AND SAY THEY'RE ALL THINKING!!!!!!!!!!!!
             while(true){
                 thinking();
                 state.grabFork(philosopherIndex,left,right);
