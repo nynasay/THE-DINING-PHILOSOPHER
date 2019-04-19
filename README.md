@@ -20,6 +20,6 @@ We used a jdk version 9
  
 _Run the command_: 
 
-$ javac HelloWorld.java
+    $ javac DiningRoomPhilosopher.java
 
-$ java HelloWorld
+    $ java DiningRoomPhilosopher
