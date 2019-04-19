@@ -1,150 +1,135 @@
-package com.company;//import java.util.concurrent.locks.Lock;
-//import java.util.concurrent.locks.Condition;
-//import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.*;
-import java.util.concurrent.Semaphore;
+package com.company;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+//http://www.java2s.com/Tutorials/Java/Java_Thread_How_to/Concurrent/Solve_dining_philosophers_monitors.htm
 
 public class DiningRoomPhilosopher {
-
-    //MUST DELETE!!!!
-    //public static int philosopherNum;
-
-    //INITIALIZING GLOBAL VARIABLES
-    public static int PHILTOTAL = 5;
-    public static boolean THINKING, HUNGRY, EATING;
-    //public static int LEFT = (philosopherNum + 4) % PHILTOTAL;
-    //public static int RIGHT = (philosopherNum+ 1) % PHILTOTAL;
-
-    public static boolean thinkingState[] = new boolean[PHILTOTAL];
-    public static boolean hungryState[] = new boolean[PHILTOTAL];
-    public static boolean eatingState[] = new boolean[PHILTOTAL];
-    public static TimeUnit time = TimeUnit.SECONDS;
-
-    //INITIALIZING SEMAPHORES
-    public static Semaphore mutex = new Semaphore(1);
-    public static Semaphore[] PHILSEMP = new Semaphore[PHILTOTAL];
-
-    //CHECKING IF THE PHILOSPHER IS HUNGRY AND ABLE TO EAT
-    public static void readyToEat(int philosopherNum){
-        int LEFT = (philosopherNum + 4) % PHILTOTAL;
-        int RIGHT = (philosopherNum+ 1) % PHILTOTAL;
-        if(hungryState[philosopherNum] && !eatingState[LEFT] && !eatingState[RIGHT]){
-            eatingState[philosopherNum] = true;
-
-            try {
-                time.sleep(2); //not sure what this is?
-            } catch (InterruptedException e){
-                System.out.println("Interrupted while trying to sleep");
-            }
-
-            System.out.println("Philosopher " + (philosopherNum+ 1) + " takes fork " + (LEFT + 1) + " and " + (philosopherNum +1));
-            System.out.println("Philosopher " + (philosopherNum+ 1) + " is eating");
-
-            PHILSEMP[philosopherNum].release();
-            //USED TO WAKE UP HUNGRY PHILOSOPHERS DURING RETURNFORKS
-            //sem_post(&S[phnum]);
-            /*try{
-                // GET A PERMIT FOR THE SEMAPHORE
-                System.out.println("Philosopher " + philNum + " is waiting for a permit.");
-
-                mutex.acquire();
-
-                System.out.println("Philosopher " + philNum + " gets a permit.");
-            }catch (InterruptedException exc) {
-                System.out.println(exc);
-            }*/
+    static class Fork{
+        private boolean availabile;
+        public Fork (){
+            availabile = true;
+        }
+        public boolean getAvailability(){
+            return availabile;
+        }
+        public void setAvailabile(boolean x){
+            availabile = x;
         }
     }
 
-    //CALLED BY A PHILOSOPHER WHEN THEY WISH TO EAT
-    public static void takeForks(int philosopherNumber){
-        int LEFT = (philosopherNumber + 4) % PHILTOTAL;
-        int RIGHT = (philosopherNumber+ 1) % PHILTOTAL;
-        mutex.tryAcquire();
+    static class State{
+        Lock mutex = new ReentrantLock();
+        //Conditions for the 5 philosophers to prevent starvation
+        Condition [] conditions = new Condition[5];
+        String [] currentState = new String[5];
+        int [] philosopherNum = new int [5];
 
-        //Set the state of philosopher to hungry
-        hungryState[philosopherNumber] = true;
-        System.out.println("Philosopher " +(philosopherNumber + 1)+ " is hungry");
-
-        readyToEat(philosopherNumber);
-
-        // GET A PERMIT FOR THE SEMAPHORE
-        mutex.release();
-
-        PHILSEMP[philosopherNumber].tryAcquire();
-
-        try {
-            time.sleep(1); //not sure what this is?
-        } catch (InterruptedException e){
-            System.out.println("Interrupted while trying to sleep");
+        public State (){
+            for ( int i = 0 ; i < 5; i ++){
+                philosopherNum[i] = i;
+                currentState[i] = "thinking";
+                conditions[i] = mutex.newCondition();
+            }
+        }
+        public void setState (int philosphoer, String state){
+            currentState[philosphoer] = state;
         }
 
-        /*try{
-            // GET A PERMIT FOR THE SEMAPHORE
-            PHILSEMP[philosopherNumber].acquire();
-        }catch (InterruptedException exc) {
-            System.out.println(exc);
-        }*/
+        public void outputState (int philosopherIndex){
+
+        }
+
+        public void grabFork ( int philosopherIndex, Fork left, Fork right){
+            mutex.lock();
+            try{
+                setState(philosopherIndex, "hungry");
+                System.out.println("Philosopher " + (philosopherIndex +1) +" is hungry");
+                //The philospher has to wait until the forks become available
+                while (!left.getAvailability() || !right.getAvailability()){
+                    conditions[philosopherIndex].await();
+                }
+                //Once both left and right has become availabile, they have to be
+                //set to false since the philosopher is using them
+                left.setAvailabile(false);
+                right.setAvailabile(false);
+                setState(philosopherIndex, "eating");
+                int leftFork = (((philosopherIndex+1) + 4) % 5);
+                System.out.println("Philosopher " + (philosopherIndex+1) + " takes fork " + (leftFork) + " and " + (philosopherIndex+1));
+                System.out.println("Philosopher " + (philosopherIndex+1) + " is " + currentState[philosopherIndex]);
+
+            }
+            catch(Exception e){
+                e.printStackTrace();
+            }
+            mutex.unlock();
+        }
+        public void putForkDown ( int philosopherIndex, Fork left, Fork right){
+            mutex.lock();
+            setState(philosopherIndex, "thinking");
+            left.setAvailabile(true);
+            right.setAvailabile(true);
+            conditions[(philosopherIndex+1) % 5].signal();
+            conditions[(philosopherIndex+4) % 5].signal();
+            int leftFork = (((philosopherIndex+1) + 4) % 5);
+            System.out.println("Philosopher " + (philosopherIndex+1) + " puts fork " + (leftFork) + " and " + (philosopherIndex+1) + " down.");
+            System.out.println("Philosopher " + (philosopherIndex+1) + " is " + currentState[philosopherIndex]);
+            mutex.unlock();
+        }
+
     }
 
-    //CALLED BY A PHILOSPHER  WHEN THEY'RE DONE EATING
-    public static void returnForks(int philosopherNumber){
-        int LEFT = (philosopherNumber + 4) % PHILTOTAL;
-        int RIGHT = (philosopherNumber + 1) % PHILTOTAL;
-        //sem_wait(&mutex);
-        //time.sleep(mutex);?
-        PHILSEMP[philosopherNumber].tryAcquire();
-        //SAY THAT THE PHILOSPHER IS THINKING
-        thinkingState[philosopherNumber] = true;
-        System.out.println("Philospher " + (philosopherNumber + 1) + " is putting fork " + (LEFT + 1) + " and " + (philosopherNumber + 1) + " down");
-        System.out.println("Philospher " + (philosopherNumber + 1) + " is thinking");
-        readyToEat(LEFT);
-        readyToEat(RIGHT);
-        //sem_wait(&mutex);
-        PHILSEMP[philosopherNumber].release();
-    }
-    public static void startPhilosopher (int n){
-        while(true){
-            int i = n;
+    static class Philosopher implements Runnable{
+        State state;
+        Fork left, right;
+        int philosopherIndex;
+        public Philosopher( int philosopherIndex, Fork left, Fork right, State i){
+            this.state = i;
+            this.left = left;
+            this.right= right;
+            this.philosopherIndex = philosopherIndex;
+        }
+        private void thinking(){
+            int sleepTime = (int)(Math.random()*2000);
             try{
-                time.sleep(1);
-            } catch (InterruptedException e){
-                System.out.println("Interrupted while trying to sleep");
+                Thread.sleep(sleepTime);
+                System.out.println("Philosopher " + (philosopherIndex +1) +" is thinking");
+            }catch (InterruptedException e){
+                e.printStackTrace();
             }
-            takeForks(i);
+        }
+        private void eating(){
+            int sleepTime = (int)(Math.random()*2000);
             try{
-                time.sleep(0);
-            } catch (InterruptedException e){
-                System.out.println("Interrupted while trying to sleep");
+                Thread.sleep(sleepTime);
+                System.out.println("Philosopher " + (philosopherIndex +1) +" is eating");
+            }catch (InterruptedException e){
+                e.printStackTrace();
             }
-            returnForks(i);
-
+        }
+        public void run(){
+            while(true){
+                thinking();
+                state.grabFork(philosopherIndex,left,right);
+                eating();
+                state.putForkDown(philosopherIndex,left,right);
+                thinking();
+            }
         }
 
     }
     public static void main (String[] args){
-        for( int i = 0 ; i < PHILTOTAL; i++){
-            PHILSEMP[i] = new Semaphore(0);
+        Fork[] fork = new Fork[5];
+        Philosopher[] philosophers = new Philosopher[5];
+        State state = new State();
+        for (int i = 0; i < 5; i++){
+            fork[i] = new Fork();
         }
-        //Create threads
-        Thread philThreads[] = new Thread[PHILTOTAL];
-        for (int j = 0; j < PHILTOTAL; j++) {
-            philThreads[j] = new Thread();
-            philThreads[j].start();
-            System.out.println("Philosopher " + (j+1) + " is thinking.");
-
-        }
-        for (int i = 0; i< PHILTOTAL; i++){
-            startPhilosopher(i);
-            try {
-                philThreads[i].join();
-                startPhilosopher(i);
-            }
-            catch (InterruptedException e){
-                e.printStackTrace();
-            }
+        for ( int i = 0; i < 5; i++){
+            philosophers[i] = new Philosopher(i, fork[i], fork[(i+4) % 5], state);
+            Thread philnum = new Thread(philosophers[i]);
+            philnum.start();
         }
 
     }
-
 }
