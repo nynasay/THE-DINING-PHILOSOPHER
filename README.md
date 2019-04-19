@@ -14,11 +14,11 @@ deadlock-free. The constraints we had to cosider when solving this problem:
 
 *TO COMPILE AND RUN*
 
-_In Eclipse, IntelliJ, or other java compiler_:
+_In Eclipse, IntelliJ, or other Java compiler_:
 
 We used a jdk version 9
  
-_Run the command_: 
+_Run the command in stdlinux_: 
 
     $ javac DiningRoomPhilosopher.java
 
