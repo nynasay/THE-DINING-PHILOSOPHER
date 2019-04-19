@@ -1,8 +1,12 @@
+/*
+* THE DINING PHILOSOPHERS PROBLEM
+* AUTHORS: Vicky Sandoval and Nyna Sayarath
+* */
+
 package com.company;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-//http://www.java2s.com/Tutorials/Java/Java_Thread_How_to/Concurrent/Solve_dining_philosophers_monitors.htm
 
 public class DiningRoomPhilosopher {
 
@@ -125,7 +129,6 @@ public class DiningRoomPhilosopher {
             int sleepTime = (int)(Math.random()*2000);
             try{
                 Thread.sleep(sleepTime);
-                //System.out.println("Philosopher " + (philosopherIndex +1) +" is thinking");
             }catch (InterruptedException e){
                 e.printStackTrace();
             }
@@ -136,7 +139,6 @@ public class DiningRoomPhilosopher {
             int sleepTime = (int)(Math.random()*2000);
             try{
                 Thread.sleep(sleepTime);
-                //System.out.println("Philosopher " + (philosopherIndex +1) +" is eating");
             }catch (InterruptedException e){
                 e.printStackTrace();
             }
@@ -144,7 +146,6 @@ public class DiningRoomPhilosopher {
 
         //INITIALIZES THE PHILOSOPHER TO START THINKING AND EATING
         public void run(){
-            //MIGHT WANT TO LOOP THROUGH AND SAY THEY'RE ALL THINKING!!!!!!!!!!!!
             while(true){
                 thinking();
                 state.grabFork(philosopherIndex,left,right);
@@ -167,10 +168,12 @@ public class DiningRoomPhilosopher {
             fork[i] = new Fork();
         }
 
-        //CREATING A PHILOSOPHER AS WELL AS THEIR THREAD
+        //CREATING A PHILOSOPHER AS WELL AS THEIR THREAD AND PRINT THAT THEY START OUT BY THINKING
         for ( int i = 0; i < 5; i++){
             philosophers[i] = new Philosopher(i, fork[i], fork[(i+4) % 5], state);
             Thread philnum = new Thread(philosophers[i]);
+            //int phil = i + 1;
+            System.out.println("Philosopher " + (i+1) + " is thinking");
             philnum.start();
         }
 
